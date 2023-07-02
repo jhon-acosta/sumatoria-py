@@ -1,7 +1,7 @@
 import socket
 from functools import reduce
 
-SERVER_ADDRESS = '192.168.1.10'
+SERVER_ADDRESS = '192.168.1.3'
 SERVER_PORT = 9090
 
 s = socket.socket()
