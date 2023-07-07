@@ -1,31 +1,57 @@
+import cv2
 import socket
-from functools import reduce
+import pickle
+import struct
 
-SERVER_ADDRESS = '192.168.1.3'
-SERVER_PORT = 9090
+# Configuración del servidor
+HOST = '127.0.0.1'
+PORT = 9998
 
-s = socket.socket()
-s.bind((SERVER_ADDRESS, SERVER_PORT))
-s.listen()
+# Crear un socket TCP/IP
+server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+server_socket.bind((HOST, PORT))
+server_socket.listen(1)
 
-print("Escuchando en el servidor: " + str((SERVER_ADDRESS, SERVER_PORT)))
+print('Esperando conexión del cliente...')
 
-while True:
-  c, addr = s.accept()
-  while True:
-    data = c.recv(2048)
+# Aceptar la conexión del cliente
+client_socket, address = server_socket.accept()
+print('Cliente conectado:', address)
 
-    if not data:
-      print("[SERVIDOR]: Fin de transmisión desde el cliente")
-      break
+# Abrir el video
+video = cv2.VideoCapture('/home/jhon/Downloads/mich.mp4')
 
-    data = data.decode()
-    data = [format(float(num), '.2f') for num in data.split(',')]
-    data = list(map(float, data))
-    data = reduce(lambda acc, val: acc + val, data, 0)
+# Obtener el tamaño del video (ancho x alto)
+width = int(video.get(cv2.CAP_PROP_FRAME_WIDTH))
+height = int(video.get(cv2.CAP_PROP_FRAME_HEIGHT))
 
-    print(f'[SERVIDOR]: Sumatoria {data}')
+# Enviar el tamaño del video al cliente
+size = struct.pack('!ii', width, height)
+client_socket.sendall(size)
 
-    c.send(f'[SERVIDOR]: La sumatoria es: {data} //'.encode())
+while video.isOpened():
+    # Leer el siguiente cuadro de video
+    ret, frame = video.read()
 
-  c.close() 
+    if ret:
+        # Codificar el cuadro en formato de bytes
+        data = pickle.dumps(frame)
+
+        # Obtener la longitud de los datos codificados
+        size = struct.pack('!i', len(data))
+
+        # Enviar la longitud de los datos al cliente
+        client_socket.sendall(size)
+
+        # Enviar los datos al cliente
+        client_socket.sendall(data)
+
+    else:
+        # Finalizar la transmisión del video
+        break
+
+# Cerrar la conexión con el cliente
+client_socket.close()
+
+# Cerrar el socket del servidor
+server_socket.close()

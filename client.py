@@ -1,35 +1,50 @@
-import re
 import socket
+import pickle
+import struct
+import cv2
+import numpy as np
 
-SERVER_ADDRESS = '192.168.1.3'
-SERVER_PORT = 9090
+# Configuración del servidor
+HOST = 'localhost'
+PORT = 9998
 
-s = socket.socket()
-s.connect((SERVER_ADDRESS, SERVER_PORT))
-print('Servidor levantado:' + str((SERVER_ADDRESS, SERVER_PORT)))
+# Crear un socket TCP/IP
+client_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+client_socket.connect((HOST, PORT))
+
+# Recibir el tamaño del video del servidor
+size_data = client_socket.recv(8)
+width, height = struct.unpack('!ii', size_data)
+
+# Crear una ventana para mostrar el video
+cv2.namedWindow('Video', cv2.WINDOW_NORMAL)
+cv2.resizeWindow('Video', width, height)
 
 while True:
-  try:
-    valor1 = input("[CLIENTE]: Ingrese un primer valor numerico:")
-    valor2 = input("[CLIENTE]: Ingrese un segundo valor numerico:")
-  except EOFError:
-      print("Error: inconveniente en la captura de valores")
-  
-  digitos = [valor1, valor2]
+    # Recibir la longitud de los datos del servidor
+    size_data = client_socket.recv(4)
+    size = struct.unpack('!i', size_data)[0]
 
-  # Validaciones
-  if any(not re.match(r'^\d+(\.\d+)?$' or not valor , valor) for valor in digitos):
-    print("[CLIENTE]: Algun valor ingresado no es numerico")
-    continue
+    # Recibir los datos del servidor
+    data = b''
+    while len(data) < size:
+        packet = client_socket.recv(size - len(data))
+        if not packet:
+            break
+        data += packet
 
-  data = ','.join(digitos)
-  s.send(data.encode())
+    # Si no se reciben datos, finalizar la recepción
+    if not data:
+        break
 
-  data = s.recv(2048)
-  if not data:
-      print("[CLIENTE]: Servidor habilitado")
-      break
-  else:
-      print(data)
+    # Deserializar los datos y convertirlos en un cuadro de imagen
+    frame = pickle.loads(data)
 
-s.close()
+    # Mostrar el cuadro de imagen en la ventana
+    cv2.imshow('Video', frame)
+    if cv2.waitKey(1) & 0xFF == ord('q'):
+        break
+
+# Cerrar la ventana y la conexión con el servidor
+cv2.destroyAllWindows()
+client_socket.close()
