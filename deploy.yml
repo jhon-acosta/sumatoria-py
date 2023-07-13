@@ -1,0 +1,11 @@
+version: "3"
+
+services:
+  server:
+    image: server-py
+    ports:
+      - 9999:9999
+    deploy:
+      replicas: 3
+      restart_policy:
+        condition: on-failure

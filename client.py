@@ -2,11 +2,10 @@ import socket
 import pickle
 import struct
 import cv2
-import numpy as np
 
 # Configuración del servidor
-HOST = 'localhost'
-PORT = 9998
+HOST = '0.0.0.0'
+PORT = 9999
 
 # Crear un socket TCP/IP
 client_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)

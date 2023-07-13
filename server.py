@@ -4,8 +4,8 @@ import pickle
 import struct
 
 # Configuración del servidor
-HOST = '127.0.0.1'
-PORT = 9998
+HOST = '0.0.0.0'
+PORT = 9999
 
 # Crear un socket TCP/IP
 server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -19,7 +19,7 @@ client_socket, address = server_socket.accept()
 print('Cliente conectado:', address)
 
 # Abrir el video
-video = cv2.VideoCapture('/home/jhon/Downloads/mich.mp4')
+video = cv2.VideoCapture('./video-py.mp4')
 
 # Obtener el tamaño del video (ancho x alto)
 width = int(video.get(cv2.CAP_PROP_FRAME_WIDTH))
