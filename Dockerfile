@@ -6,6 +6,6 @@ COPY . .
 
 RUN pip install opencv-python-headless
 
-EXPOSE 9999
+EXPOSE 9090
 
 CMD ["python", "server.py"]

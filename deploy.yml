@@ -4,8 +4,8 @@ services:
   server:
     image: server-py
     ports:
-      - 9999:9999
+      - 9090:9090
     deploy:
-      replicas: 3
+      replicas: 20
       restart_policy:
         condition: on-failure

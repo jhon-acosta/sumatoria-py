@@ -1,49 +1,59 @@
-import socket
-import pickle
-import struct
-import cv2
 
-# Configuración del servidor
-HOST = '24.199.121.114'  # apuntado a la nube
-PORT = 9999
 
-# Crear un socket TCP/IP
-client_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-client_socket.connect((HOST, PORT))
+import socket  # Importa la biblioteca socket para la comunicación de red
+import cv2  # Importa la biblioteca OpenCV para el procesamiento de imágenes y videos
+import numpy as np  # Importa la biblioteca NumPy para operaciones numéricas eficientes
 
-# Recibir el tamaño del video del servidor
-size_data = client_socket.recv(8)
-width, height = struct.unpack('!ii', size_data)
+SERVER_ADDRESS = "24.199.78.243"  # Dirección IP del servidor
+SERVER_PORT = 9090  # Puerto del servidor
 
-# Crear una ventana para mostrar el video
-cv2.namedWindow('Video', cv2.WINDOW_NORMAL)
-cv2.resizeWindow('Video', width, height)
+s = socket.socket()  # Crea un objeto socket para la comunicación
+# Establece una conexión con el servidor
+s.connect((SERVER_ADDRESS, SERVER_PORT))
 
-while True:
-    # Recibir la longitud de los datos del servidor
-    size_data = client_socket.recv(4)
-    size = struct.unpack('!i', size_data)[0]
+# Imprime un mensaje de conexión exitosa
+print("Conectado al servidor en " + str((SERVER_ADDRESS, SERVER_PORT)))
 
-    # Recibir los datos del servidor
-    data = b''
-    while len(data) < size:
-        packet = client_socket.recv(size - len(data))
-        if not packet:
-            break
-        data += packet
+video_frames = []  # Lista para almacenar los frames de video recibidos
 
-    # Si no se reciben datos, finalizar la recepción
-    if not data:
-        break
+while True:  # Bucle infinito para recibir y mostrar los frames del video
+    # Recibe los primeros 4 bytes que representan el tamaño del siguiente frame de video
+    frame_size = s.recv(4)
 
-    # Deserializar los datos y convertirlos en un cuadro de imagen
-    frame = pickle.loads(data)
+    if not frame_size:  # Verifica si no se recibió ningún dato en frame_size
+        print("Fin de la transmisión del video")
+        break  # Rompe el bucle si no se recibieron más frames
 
-    # Mostrar el cuadro de imagen en la ventana
-    cv2.imshow('Video', frame)
+    # Convierte los bytes a un entero (orden big-endian)
+    frame_size = int.from_bytes(frame_size, byteorder='big')
+
+    # Crea una cadena de bytes vacía para almacenar los bytes del frame de video
+    frame_bytes = b""
+    remaining_bytes = frame_size  # Almacena el número de bytes que quedan por recibir
+
+    while remaining_bytes > 0:  # Bucle para recibir todos los bytes del frame de video
+        # Recibe un fragmento de bytes del frame de video (tamaño máximo de 4096 bytes)
+        chunk = s.recv(min(remaining_bytes, 4096))
+
+        if not chunk:  # Verifica si no se recibió ningún dato en chunk
+            print("Error al recibir los bytes del frame")
+            break  # Rompe el bucle si no se recibieron más bytes del frame
+
+        frame_bytes += chunk  # Concatena los bytes recibidos al conjunto de bytes del frame
+        # Resta la longitud del fragmento recibido a los bytes restantes por recibir
+        remaining_bytes -= len(chunk)
+
+    # Convierte los bytes del frame en un array NumPy de tipo uint8
+    frame_array = np.frombuffer(frame_bytes, dtype=np.uint8)
+    # Decodifica el array de bytes en una imagen OpenCV en color
+    frame = cv2.imdecode(frame_array, cv2.IMREAD_COLOR)
+    # Muestra la imagen del frame en una ventana llamada "Video del servidor"
+    cv2.imshow("Video del servidor", frame)
+    video_frames.append(frame)  # Agrega el frame a la lista de frames de video
+
+    # Espera durante 1 ms y verifica si la tecla 'q' ha sido presionada
     if cv2.waitKey(1) & 0xFF == ord('q'):
-        break
+        break  # Rompe el bucle si se presionó la tecla 'q'
 
-# Cerrar la ventana y la conexión con el servidor
-cv2.destroyAllWindows()
-client_socket.close()
+cv2.destroyAllWindows()  # Cierra todas las ventanas abiertas por OpenCV
+s.close()  # Cierra la conexión del socket

@@ -1,57 +1,40 @@
 import cv2
 import socket
-import pickle
-import struct
 
-# Configuración del servidor
-HOST = '0.0.0.0'
-PORT = 9999
+SERVER_ADDRESS = "0.0.0.0"
+SERVER_PORT = 9090
 
-# Crear un socket TCP/IP
-server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-server_socket.bind((HOST, PORT))
-server_socket.listen(20)
+s = socket.socket()
+s.bind((SERVER_ADDRESS, SERVER_PORT))
 
-print('Esperando conexión del cliente...')
+s.listen(100)
+print("Escuchando al servidor en " + str((SERVER_ADDRESS, SERVER_PORT)))
 
-# Aceptar la conexión del cliente
-client_socket, address = server_socket.accept()
-print('Cliente conectado:', address)
+while True:
+    c, addr = s.accept()
+    print("Cliente conectado: " + str(addr))
 
-# Abrir el video
-video = cv2.VideoCapture('./video-py.mp4')
+    video_path = "./video-py.mp4"  # Ruta del video a cargar
+    video = cv2.VideoCapture(video_path)
 
-# Obtener el tamaño del video (ancho x alto)
-width = int(video.get(cv2.CAP_PROP_FRAME_WIDTH))
-height = int(video.get(cv2.CAP_PROP_FRAME_HEIGHT))
+    frame_count = 0
 
-# Enviar el tamaño del video al cliente
-size = struct.pack('!ii', width, height)
-client_socket.sendall(size)
+    while True:
+        ret, frame = video.read()
+        if not ret:
+            print("Fin de la transmisión del video")
+            break
+        # Codificar el frame como bytes para enviarlo
+        frame_bytes = cv2.imencode('.jpg', frame)[1].tobytes()
+        # Enviar el tamaño del frame al cliente
+        frame_size = len(frame_bytes).to_bytes(4, byteorder='big')
+        c.send(frame_size)
 
-while video.isOpened():
-    # Leer el siguiente cuadro de video
-    ret, frame = video.read()
+        # Enviar el frame al cliente
+        c.send(frame_bytes)
 
-    if ret:
-        # Codificar el cuadro en formato de bytes
-        data = pickle.dumps(frame)
+        frame_count += 1
+        print("Enviando frame {} al cliente".format(frame_count))
 
-        # Obtener la longitud de los datos codificados
-        size = struct.pack('!i', len(data))
-
-        # Enviar la longitud de los datos al cliente
-        client_socket.sendall(size)
-
-        # Enviar los datos al cliente
-        client_socket.sendall(data)
-
-    else:
-        # Finalizar la transmisión del video
-        break
-
-# Cerrar la conexión con el cliente
-client_socket.close()
-
-# Cerrar el socket del servidor
-server_socket.close()
+    video.release()
+    c.close()
