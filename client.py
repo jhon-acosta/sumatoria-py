@@ -4,7 +4,7 @@ import struct
 import cv2
 
 # Configuración del servidor
-HOST = '0.0.0.0'
+HOST = '24.199.121.114'  # apuntado a la nube
 PORT = 9999
 
 # Crear un socket TCP/IP

@@ -10,7 +10,7 @@ PORT = 9999
 # Crear un socket TCP/IP
 server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 server_socket.bind((HOST, PORT))
-server_socket.listen(1)
+server_socket.listen(20)
 
 print('Esperando conexión del cliente...')
 
