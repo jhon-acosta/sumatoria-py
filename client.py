@@ -1,10 +1,8 @@
-
-
 import socket  # Importa la biblioteca socket para la comunicación de red
 import cv2  # Importa la biblioteca OpenCV para el procesamiento de imágenes y videos
 import numpy as np  # Importa la biblioteca NumPy para operaciones numéricas eficientes
 
-SERVER_ADDRESS = "24.199.78.243"  # Dirección IP del servidor
+SERVER_ADDRESS = "143.198.76.23"  # Dirección IP del servidor
 SERVER_PORT = 9090  # Puerto del servidor
 
 s = socket.socket()  # Crea un objeto socket para la comunicación

@@ -1,7 +1,7 @@
 import cv2
 import socket
 
-SERVER_ADDRESS = "0.0.0.0"
+SERVER_ADDRESS = "172.16.5.59"
 SERVER_PORT = 9090
 
 s = socket.socket()
